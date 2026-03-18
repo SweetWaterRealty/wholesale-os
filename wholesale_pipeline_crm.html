@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wholesale OS — Pipeline CRM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0b;
+  --surface: #111113;
+  --surface2: #18181b;
+  --surface3: #222228;
+  --border: #2a2a32;
+  --border2: #363640;
+  --text: #f0f0f4;
+  --muted: #7a7a8a;
+  --muted2: #4a4a58;
+  --accent: #00d4ff;
+  --accent2: #0099cc;
+  --green: #00ff88;
+  --green2: #00cc6a;
+  --warn: #ff8c00;
+  --red: #ff4455;
+  --purple: #b388ff;
+  --mono: 'DM Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; overflow-x: hidden; }
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* ── TOPBAR ── */
+.topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 20px; height: 52px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+.topbar-brand { display: flex; align-items: center; gap: 10px; }
+.brand-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+.brand-name { font-family: var(--mono); font-size: 13px; letter-spacing: 2px; color: var(--text); text-transform: uppercase; }
+.topbar-nav { display: flex; gap: 2px; }
+.nav-btn { padding: 6px 14px; background: transparent; border: 1px solid transparent; color: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; border-radius: 4px; transition: all .15s; }
+.nav-btn:hover { color: var(--text); border-color: var(--border2); }
+.nav-btn.active { color: var(--accent); border-color: rgba(0,212,255,.3); background: rgba(0,212,255,.06); }
+.topbar-actions { display: flex; gap: 8px; align-items: center; }
+.sync-btn { padding: 7px 14px; background: transparent; border: 1px solid rgba(0,212,255,.4); color: var(--accent); font-family: var(--mono); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; border-radius: 4px; transition: all .2s; }
+.sync-btn:hover { background: rgba(0,212,255,.1); }
+.add-btn { padding: 7px 14px; background: var(--accent); border: none; color: #000; font-family: var(--mono); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; border-radius: 4px; font-weight: 500; transition: all .2s; }
+.add-btn:hover { background: #33ddff; }
+
+/* ── VIEWS ── */
+.view { display: none; }
+.view.active { display: block; }
+
+/* ── PIPELINE VIEW ── */
+.pipeline-header { padding: 16px 20px 12px; display: flex; align-items: center; justify-content: space-between; }
+.pipeline-stats { display: flex; gap: 20px; }
+.stat { text-align: center; }
+.stat-val { font-family: var(--mono); font-size: 20px; font-weight: 500; color: var(--text); }
+.stat-label { font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+.pipeline-board { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1px; background: var(--border); min-height: calc(100vh - 130px); }
+.stage-col { background: var(--surface); display: flex; flex-direction: column; }
+.stage-header { padding: 12px 14px 10px; border-bottom: 1px solid var(--border); }
+.stage-name { font-family: var(--mono); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.stage-count { font-family: var(--mono); font-size: 18px; font-weight: 500; color: var(--text); }
+.stage-cards { padding: 10px 8px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.lead-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 11px 12px; cursor: pointer; transition: all .15s; position: relative; overflow: hidden; }
+.lead-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+.lead-card.hot::before { background: var(--red); }
+.lead-card.warm::before { background: var(--warn); }
+.lead-card.cool::before { background: var(--accent); }
+.lead-card.cold::before { background: var(--muted2); }
+.lead-card:hover { border-color: var(--border2); background: var(--surface3); transform: translateY(-1px); }
+.card-name { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 3px; }
+.card-address { font-size: 11px; color: var(--muted); margin-bottom: 7px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-meta { display: flex; justify-content: space-between; align-items: center; }
+.card-score { font-family: var(--mono); font-size: 10px; padding: 2px 7px; border-radius: 99px; }
+.card-score.hot { background: rgba(255,68,85,.15); color: var(--red); border: 1px solid rgba(255,68,85,.3); }
+.card-score.warm { background: rgba(255,140,0,.15); color: var(--warn); border: 1px solid rgba(255,140,0,.3); }
+.card-score.cool { background: rgba(0,212,255,.1); color: var(--accent); border: 1px solid rgba(0,212,255,.2); }
+.card-score.cold { background: rgba(122,122,138,.1); color: var(--muted); border: 1px solid rgba(122,122,138,.2); }
+.card-days { font-family: var(--mono); font-size: 9px; color: var(--muted); }
+.card-days.urgent { color: var(--red); }
+.card-timeline { font-family: var(--mono); font-size: 9px; color: var(--muted2); margin-top: 5px; }
+.empty-col { padding: 20px 8px; text-align: center; font-family: var(--mono); font-size: 9px; letter-spacing: 1px; color: var(--muted2); }
+
+/* ── LEAD DETAIL VIEW ── */
+.detail-topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; }
+.detail-back { padding: 6px 12px; background: transparent; border: 1px solid var(--border2); color: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: 1.5px; cursor: pointer; border-radius: 4px; transition: all .15s; }
+.detail-back:hover { color: var(--text); border-color: var(--accent); }
+.stage-track { display: flex; align-items: center; gap: 2px; }
+.stage-step { padding: 5px 11px; font-family: var(--mono); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted2); border-radius: 3px; cursor: pointer; transition: all .15s; border: 1px solid transparent; }
+.stage-step.done { color: rgba(0,255,136,.6); }
+.stage-step.active { background: rgba(0,212,255,.12); color: var(--accent); border-color: rgba(0,212,255,.3); }
+.stage-step:hover:not(.active) { color: var(--muted); }
+.stage-sep { color: var(--muted2); font-size: 10px; }
+.detail-body { display: grid; grid-template-columns: 230px 1fr 250px; min-height: calc(100vh - 104px); }
+.detail-col { border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+.detail-col:last-child { border-right: none; }
+.dsec { padding: 14px 14px; border-bottom: 1px solid var(--border); }
+.dsec:last-child { border-bottom: none; }
+.dsec-title { font-family: var(--mono); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.seller-avatar { width: 44px; height: 44px; border-radius: 50%; background: rgba(255,140,0,.2); border: 1px solid rgba(255,140,0,.4); display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 14px; font-weight: 500; color: var(--warn); flex-shrink: 0; }
+.info-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12px; gap: 8px; }
+.info-row:last-child { border-bottom: none; }
+.info-key { color: var(--muted); flex-shrink: 0; }
+.info-val { color: var(--text); font-weight: 500; text-align: right; word-break: break-word; }
+.info-val.accent { color: var(--accent); }
+.info-val.warn { color: var(--warn); }
+.info-val.green { color: var(--green); }
+.info-val.red { color: var(--red); }
+.prop-chip { display: inline-block; padding: 3px 8px; background: var(--surface3); border: 1px solid var(--border2); border-radius: 3px; font-family: var(--mono); font-size: 10px; color: var(--muted); margin: 2px; }
+.ai-banner { background: rgba(255,140,0,.08); border: 1px solid rgba(255,140,0,.25); border-radius: 5px; padding: 10px 12px; display: flex; gap: 10px; }
+.ai-tag { font-family: var(--mono); font-size: 9px; letter-spacing: 1px; padding: 2px 6px; background: rgba(255,140,0,.2); color: var(--warn); border-radius: 3px; flex-shrink: 0; margin-top: 1px; }
+.ai-msg { font-size: 12px; color: var(--warn); line-height: 1.5; }
+
+/* CALCULATOR */
+.calc-tabs { display: flex; gap: 2px; margin-bottom: 12px; }
+.ctab { padding: 5px 10px; background: transparent; border: 1px solid var(--border2); color: var(--muted); font-family: var(--mono); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; border-radius: 3px; transition: all .15s; }
+.ctab.active { background: rgba(0,212,255,.1); border-color: rgba(0,212,255,.35); color: var(--accent); }
+.cpanel { display: none; }
+.cpanel.active { display: block; }
+.calc-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; margin-bottom: 10px; }
+.cfield label { display: block; font-family: var(--mono); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.cfield input, .cfield select { width: 100%; background: var(--surface3); border: 1px solid var(--border2); color: var(--text); padding: 6px 9px; font-family: var(--mono); font-size: 12px; border-radius: 4px; outline: none; transition: border-color .15s; }
+.cfield input:focus, .cfield select:focus { border-color: var(--accent); }
+.results-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+.rbox { background: var(--surface3); border: 1px solid var(--border); border-radius: 4px; padding: 9px 10px; }
+.rbox-label { font-family: var(--mono); font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+.rbox-val { font-size: 17px; font-weight: 500; color: var(--text); }
+.rbox-val.accent { color: var(--accent); }
+.rbox-val.green { color: var(--green); }
+.rbox-val.warn { color: var(--warn); }
+.rbox-val.red { color: var(--red); }
+.verdict { padding: 9px 12px; border-radius: 4px; font-family: var(--mono); font-size: 10px; letter-spacing: .5px; display: flex; justify-content: space-between; align-items: center; }
+.verdict.pass { background: rgba(0,255,136,.07); border: 1px solid rgba(0,255,136,.25); color: var(--green); }
+.verdict.marginal { background: rgba(255,140,0,.07); border: 1px solid rgba(255,140,0,.25); color: var(--warn); }
+.verdict.fail { background: rgba(255,68,85,.07); border: 1px solid rgba(255,68,85,.25); color: var(--red); }
+.verdict.empty { background: var(--surface3); border: 1px solid var(--border); color: var(--muted); }
+.stress-row { display: flex; justify-content: space-between; padding: 5px 9px; border-radius: 3px; margin-bottom: 3px; font-family: var(--mono); font-size: 10px; }
+.stress-row.pass { background: rgba(0,255,136,.06); color: var(--green); }
+.stress-row.warn { background: rgba(255,140,0,.06); color: var(--warn); }
+.stress-row.fail { background: rgba(255,68,85,.06); color: var(--red); }
+.stress-lbl { color: var(--muted); }
+
+/* SELLER INTEL */
+.bucket-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 8px; }
+.bucket-card { padding: 9px 10px; border: 1px solid var(--border2); border-radius: 4px; cursor: pointer; transition: all .2s; }
+.bucket-name { font-size: 11px; font-weight: 500; color: var(--muted); margin-bottom: 2px; }
+.bucket-sub { font-size: 10px; color: var(--muted2); }
+.bucket-card.sel-hh { border-color: var(--warn); background: rgba(255,140,0,.07); }
+.bucket-card.sel-hh .bucket-name { color: var(--warn); }
+.bucket-card.sel-hl { border-color: var(--green); background: rgba(0,255,136,.06); }
+.bucket-card.sel-hl .bucket-name { color: var(--green); }
+.bucket-card.sel-ll { border-color: var(--muted); background: rgba(122,122,138,.07); }
+.bucket-card.sel-ll .bucket-name { color: var(--muted); }
+.bucket-card.sel-lh { border-color: var(--red); background: rgba(255,68,85,.07); }
+.bucket-card.sel-lh .bucket-name { color: var(--red); }
+.bucket-strategy { padding: 9px 11px; border-radius: 4px; font-size: 12px; line-height: 1.6; margin-bottom: 10px; }
+.type-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.type-chip { padding: 3px 9px; border: 1px solid var(--border2); border-radius: 99px; font-family: var(--mono); font-size: 9px; letter-spacing: .5px; color: var(--muted); cursor: pointer; transition: all .15s; }
+.type-chip.active { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,.08); }
+.type-detail { background: var(--surface3); border-radius: 4px; padding: 10px; margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.type-col-title { font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px; }
+
+/* TIMELINE */
+.tl-item { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.tl-item:last-child { border-bottom: none; }
+.tl-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.tl-dot.call { background: var(--accent); }
+.tl-dot.offer { background: var(--green); }
+.tl-dot.note { background: var(--purple); }
+.tl-dot.flag { background: var(--red); }
+.tl-dot.stage { background: var(--warn); }
+.tl-dot.import { background: var(--muted2); }
+.tl-text { font-size: 12px; color: var(--text); line-height: 1.5; }
+.tl-time { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 1px; }
+.note-area { width: 100%; background: var(--surface3); border: 1px solid var(--border2); color: var(--text); padding: 9px 11px; font-family: var(--sans); font-size: 12px; border-radius: 4px; outline: none; resize: vertical; min-height: 60px; transition: border-color .15s; }
+.note-area:focus { border-color: var(--purple); }
+.action-btn { width: 100%; padding: 8px; background: transparent; border: 1px solid var(--border2); color: var(--muted); font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; border-radius: 4px; transition: all .2s; margin-bottom: 5px; text-align: center; }
+.action-btn:hover { border-color: var(--accent); color: var(--accent); }
+.action-btn.primary { border-color: rgba(0,212,255,.5); color: var(--accent); background: rgba(0,212,255,.06); }
+
+/* NEXT STEPS */
+.next-item { display: flex; align-items: center; gap: 8px; padding: 7px 9px; border-radius: 4px; margin-bottom: 5px; font-size: 12px; }
+.next-item.urgent { background: rgba(255,68,85,.08); border: 1px solid rgba(255,68,85,.2); color: var(--red); }
+.next-item.normal { background: var(--surface3); border: 1px solid var(--border); color: var(--muted); }
+.next-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+
+/* ADD LEAD / SETTINGS MODAL */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 200; align-items: flex-start; justify-content: center; padding: 40px 20px; overflow-y: auto; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--surface); border: 1px solid var(--border2); border-radius: 8px; width: 100%; max-width: 680px; padding: 24px; }
+.modal-title { font-family: var(--mono); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.fgroup { display: flex; flex-direction: column; gap: 5px; }
+.fgroup.full { grid-column: 1 / -1; }
+.fgroup label { font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+.fgroup input, .fgroup select, .fgroup textarea { background: var(--surface2); border: 1px solid var(--border2); color: var(--text); padding: 8px 11px; font-family: var(--sans); font-size: 13px; border-radius: 4px; outline: none; transition: border-color .15s; width: 100%; }
+.fgroup input:focus, .fgroup select:focus, .fgroup textarea:focus { border-color: var(--accent); }
+.fgroup textarea { min-height: 60px; resize: vertical; }
+.form-section { font-family: var(--mono); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted2); padding: 14px 0 6px; border-top: 1px solid var(--border); margin-top: 4px; grid-column: 1 / -1; }
+.modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+.btn-cancel { padding: 9px 20px; background: transparent; border: 1px solid var(--border2); color: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: 1px; cursor: pointer; border-radius: 4px; }
+.btn-save { padding: 9px 20px; background: var(--accent); border: none; color: #000; font-family: var(--mono); font-size: 10px; letter-spacing: 1px; cursor: pointer; border-radius: 4px; font-weight: 500; }
+.settings-group { margin-bottom: 18px; }
+.settings-label { font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.settings-input { background: var(--surface2); border: 1px solid var(--border2); color: var(--text); padding: 9px 12px; font-family: var(--mono); font-size: 12px; border-radius: 4px; outline: none; width: 100%; transition: border-color .15s; }
+.settings-input:focus { border-color: var(--accent); }
+.settings-note { font-size: 11px; color: var(--muted); margin-top: 5px; line-height: 1.5; }
+.sync-result { padding: 10px 12px; border-radius: 4px; font-family: var(--mono); font-size: 11px; margin-top: 10px; display: none; }
+.sync-result.ok { background: rgba(0,255,136,.08); border: 1px solid rgba(0,255,136,.25); color: var(--green); display: block; }
+.sync-result.err { background: rgba(255,68,85,.08); border: 1px solid rgba(255,68,85,.25); color: var(--red); display: block; }
+.score-ring { display: flex; align-items: center; gap: 8px; }
+.score-num { font-family: var(--mono); font-size: 22px; font-weight: 500; }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="brand-dot"></div>
+    <span class="brand-name">Wholesale OS</span>
+  </div>
+  <div class="topbar-nav">
+    <button class="nav-btn active" onclick="showView('pipeline',this)">Pipeline</button>
+    <button class="nav-btn" onclick="showView('detail-placeholder',this)" id="nav-detail" style="display:none;">Lead Detail</button>
+  </div>
+  <div class="topbar-actions">
+    <button class="sync-btn" onclick="openSettings()">⚙ Settings / Sync</button>
+    <button class="add-btn" onclick="openAddLead()">+ Add Lead</button>
+  </div>
+</div>
+
+<!-- PIPELINE VIEW -->
+<div class="view active" id="view-pipeline">
+  <div class="pipeline-header">
+    <div class="pipeline-stats">
+      <div class="stat"><div class="stat-val" id="stat-total">0</div><div class="stat-label">Total leads</div></div>
+      <div class="stat"><div class="stat-val" id="stat-active">0</div><div class="stat-label">Active</div></div>
+      <div class="stat"><div class="stat-val" id="stat-hot">0</div><div class="stat-label" style="color:var(--red);">Hot</div></div>
+      <div class="stat"><div class="stat-val" id="stat-closed">0</div><div class="stat-label" style="color:var(--green);">Closed</div></div>
+    </div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;">WHOLESALE PIPELINE CRM</div>
+  </div>
+  <div class="pipeline-board" id="board"></div>
+</div>
+
+<!-- LEAD DETAIL VIEW -->
+<div class="view" id="view-detail">
+  <div class="detail-topbar">
+    <button class="detail-back" onclick="backToPipeline()">← Pipeline</button>
+    <div class="stage-track" id="stage-track"></div>
+    <div style="display:flex;gap:8px;">
+      <span style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;" id="detail-lead-id">LEAD #—</span>
+      <button class="detail-back" style="border-color:rgba(255,68,85,.4);color:var(--red);" onclick="markDead()">Dead</button>
+    </div>
+  </div>
+  <div class="detail-body">
+    <!-- LEFT -->
+    <div class="detail-col" style="overflow-y:auto;">
+      <div class="dsec">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <div class="seller-avatar" id="d-avatar">—</div>
+          <div>
+            <div style="font-size:15px;font-weight:500;" id="d-name">—</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px;" id="d-phone">—</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div class="score-ring">
+            <div class="score-num" id="d-score" style="color:var(--red);">—</div>
+            <div style="font-size:11px;color:var(--muted);">/ 10</div>
+          </div>
+          <span id="d-heat-badge" style="font-family:var(--mono);font-size:10px;padding:3px 9px;border-radius:99px;">—</span>
+        </div>
+        <div id="d-contact-rows"></div>
+      </div>
+      <div class="dsec">
+        <div class="dsec-title">Property</div>
+        <div style="font-size:13px;font-weight:500;margin-bottom:3px;" id="d-address">—</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px;" id="d-city-state">—</div>
+        <div id="d-prop-chips"></div>
+        <div id="d-prop-rows" style="margin-top:10px;"></div>
+      </div>
+      <div class="dsec" style="margin-top:auto;">
+        <button class="action-btn primary" id="btn-followup">Draft follow-up</button>
+        <button class="action-btn" id="btn-objections">Anticipate objections</button>
+        <button class="action-btn" id="btn-dealsheet">Generate deal sheet</button>
+      </div>
+    </div>
+
+    <!-- CENTER -->
+    <div class="detail-col" style="overflow-y:auto;">
+      <div class="dsec">
+        <div class="ai-banner" id="d-ai-banner">
+          <span class="ai-tag">AI</span>
+          <div class="ai-msg" id="d-ai-msg">—</div>
+        </div>
+      </div>
+      <div class="dsec">
+        <div class="dsec-title">Deal calculator</div>
+        <div class="calc-tabs">
+          <button class="ctab active" onclick="switchCalc('ws',this)">Wholesale</button>
+          <button class="ctab" onclick="switchCalc('rental',this)">Rental</button>
+          <button class="ctab" onclick="switchCalc('wt',this)">Wholetail</button>
+          <button class="ctab" onclick="switchCalc('stress',this)">Stress test</button>
+        </div>
+        <div class="calc-inputs">
+          <div class="cfield"><label>ARV</label><input type="number" id="c-arv" value="0" oninput="calc()"></div>
+          <div class="cfield"><label>Repairs</label><input type="number" id="c-repairs" value="0" oninput="calc()"></div>
+          <div class="cfield"><label>Your fee</label><input type="number" id="c-fee" value="8000" oninput="calc()"></div>
+        </div>
+        <div class="cpanel active" id="cpanel-ws">
+          <div class="results-grid">
+            <div class="rbox"><div class="rbox-label">Seller price</div><div class="rbox-val accent" id="r-seller">—</div></div>
+            <div class="rbox"><div class="rbox-label">Buyer price</div><div class="rbox-val" id="r-buyer">—</div></div>
+            <div class="rbox"><div class="rbox-label">Max buyer</div><div class="rbox-val" id="r-max">—</div></div>
+            <div class="rbox"><div class="rbox-label">Buyer profit</div><div class="rbox-val" id="r-profit">—</div></div>
+            <div class="rbox"><div class="rbox-label">Profit %</div><div class="rbox-val" id="r-pct">—</div></div>
+            <div class="rbox"><div class="rbox-label">Profit:rehab</div><div class="rbox-val" id="r-ptr">—</div></div>
+          </div>
+          <div class="verdict empty" id="r-verdict">Enter ARV and repairs above</div>
+        </div>
+        <div class="cpanel" id="cpanel-rental">
+          <div class="calc-inputs" style="margin-bottom:10px;">
+            <div class="cfield"><label>Monthly rent</label><input type="number" id="c-rent" value="1500" oninput="calc()"></div>
+            <div class="cfield"><label>Market</label><select id="c-market" onchange="calc()"><option value="A">A market</option><option value="B" selected>B market</option><option value="C">C market</option></select></div>
+            <div class="cfield"><label>Annual taxes</label><input type="number" id="c-taxes" value="3000" oninput="calc()"></div>
+          </div>
+          <div class="results-grid">
+            <div class="rbox"><div class="rbox-label">Net monthly</div><div class="rbox-val" id="r-net">—</div></div>
+            <div class="rbox"><div class="rbox-label">Rent ratio</div><div class="rbox-val" id="r-rratio">—</div></div>
+            <div class="rbox"><div class="rbox-label">Equity %</div><div class="rbox-val" id="r-equity">—</div></div>
+          </div>
+          <div class="verdict empty" id="r-rental-verdict">Enter numbers above</div>
+        </div>
+        <div class="cpanel" id="cpanel-wt">
+          <div class="results-grid">
+            <div class="rbox"><div class="rbox-label">Gross profit</div><div class="rbox-val" id="r-wt-profit">—</div></div>
+            <div class="rbox"><div class="rbox-label">Profit %</div><div class="rbox-val" id="r-wt-pct">—</div></div>
+            <div class="rbox"><div class="rbox-label">Total costs</div><div class="rbox-val" id="r-wt-costs">—</div></div>
+          </div>
+          <div class="verdict empty" id="r-wt-verdict">Enter numbers above</div>
+        </div>
+        <div class="cpanel" id="cpanel-stress">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:8px;letter-spacing:.5px;">Downside scenarios vs base case</div>
+          <div id="stress-rows"></div>
+        </div>
+      </div>
+      <div class="dsec">
+        <div class="dsec-title">Seller intel — bucket</div>
+        <div class="bucket-grid" id="bucket-grid">
+          <div class="bucket-card" id="bkt-ll" onclick="selectBucket('ll')"><div class="bucket-name">Low motiv. / Low price</div><div class="bucket-sub">Under 1% — dig deeper</div></div>
+          <div class="bucket-card" id="bkt-hl" onclick="selectBucket('hl')"><div class="bucket-name" style="color:var(--green);">High motiv. / Low price</div><div class="bucket-sub">Lock it up immediately</div></div>
+          <div class="bucket-card sel-hh" id="bkt-hh" onclick="selectBucket('hh')"><div class="bucket-name">High motiv. / High price</div><div class="bucket-sub">Most common — educate with math</div></div>
+          <div class="bucket-card" id="bkt-lh" onclick="selectBucket('lh')"><div class="bucket-name">Low motiv. / High price</div><div class="bucket-sub">Pull away, embrace no</div></div>
+        </div>
+        <div class="bucket-strategy" id="bucket-strategy" style="background:rgba(255,140,0,.07);border:1px solid rgba(255,140,0,.25);color:var(--warn);">Most common seller. Educate with math — walk through the numbers live on this call. Price drops happen throughout the conversation.</div>
+        <div style="margin-top:10px;">
+          <div class="dsec-title">Seller type</div>
+          <div class="type-chips" id="type-chips">
+            <span class="type-chip active" onclick="selectType(this,'financial')">Financially distressed</span>
+            <span class="type-chip" onclick="selectType(this,'occupant')">Owner occupant</span>
+            <span class="type-chip" onclick="selectType(this,'tired')">Tired landlord</span>
+            <span class="type-chip" onclick="selectType(this,'inherited')">Inherited</span>
+          </div>
+          <div class="type-detail" id="type-detail">
+            <div><div class="type-col-title" style="color:var(--accent);">Key questions</div><div id="type-q" style="font-size:11px;color:var(--muted);line-height:1.8;"></div></div>
+            <div><div class="type-col-title" style="color:var(--green);">Strategy</div><div id="type-s" style="font-size:11px;color:var(--muted);line-height:1.8;"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="detail-col" style="overflow-y:auto;">
+      <div class="dsec">
+        <div class="dsec-title">Next steps</div>
+        <div id="next-steps-list"></div>
+      </div>
+      <div class="dsec" style="flex:1;">
+        <div class="dsec-title">Activity</div>
+        <div id="timeline-list"></div>
+      </div>
+      <div class="dsec">
+        <div class="dsec-title">Add note / log call</div>
+        <textarea class="note-area" id="note-input" placeholder="Call notes, seller details..."></textarea>
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <button class="action-btn" style="flex:1;margin:0;" onclick="addNote()">Save note</button>
+          <button class="action-btn primary" style="flex:1;margin:0;" onclick="logCall()">Log call</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD LEAD MODAL -->
+<div class="modal-overlay" id="modal-add">
+  <div class="modal">
+    <div class="modal-title">Add lead manually</div>
+    <div class="form-grid">
+      <div class="form-section">Contact</div>
+      <div class="fgroup"><label>First name</label><input id="f-first" type="text"></div>
+      <div class="fgroup"><label>Last name</label><input id="f-last" type="text"></div>
+      <div class="fgroup"><label>Phone</label><input id="f-phone" type="text"></div>
+      <div class="fgroup"><label>Email</label><input id="f-email" type="email"></div>
+      <div class="form-section">Property</div>
+      <div class="fgroup full"><label>Property address</label><input id="f-address" type="text"></div>
+      <div class="fgroup"><label>City</label><input id="f-city" type="text"></div>
+      <div class="fgroup"><label>State</label><input id="f-state" type="text"></div>
+      <div class="fgroup"><label>Zip</label><input id="f-zip" type="text"></div>
+      <div class="fgroup"><label>Property type</label><select id="f-type"><option>Single family</option><option>Multi family</option><option>Condo</option><option>Other</option></select></div>
+      <div class="fgroup"><label>Bedrooms</label><input id="f-beds" type="text"></div>
+      <div class="fgroup"><label>Bathrooms</label><input id="f-baths" type="text"></div>
+      <div class="fgroup"><label>Sq ft range</label><input id="f-sqft" type="text" placeholder="e.g. 1000-2000"></div>
+      <div class="form-section">Motivation</div>
+      <div class="fgroup"><label>Timeline (sell fast)</label><select id="f-sellfast"><option value="ASAP">ASAP</option><option value="1-3 months">1-3 months</option><option value="3-6 months">3-6 months</option><option value="6+ months">6+ months</option></select></div>
+      <div class="fgroup"><label>Goal</label><select id="f-goal"><option>Relocating</option><option>Financial distress</option><option>Downsizing</option><option>Inherited</option><option>Tired landlord</option><option>Other</option></select></div>
+      <div class="fgroup"><label>Occupancy</label><select id="f-occupied"><option>Owner Occupied</option><option>Vacant</option><option>Tenant Occupied</option></select></div>
+      <div class="fgroup"><label>Asking price</label><input id="f-asking" type="number"></div>
+      <div class="fgroup"><label>Lead source</label><input id="f-source" type="text" value="iSpeedToLead"></div>
+      <div class="fgroup"><label>Best call time</label><input id="f-calltime" type="text"></div>
+      <div class="fgroup full"><label>Notes / summary</label><textarea id="f-summary"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-add')">Cancel</button>
+      <button class="btn-save" onclick="saveLead()">Save lead</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="modal-settings">
+  <div class="modal">
+    <div class="modal-title">Settings & Google Sheets sync</div>
+    <div class="settings-group">
+      <div class="settings-label">Google Spreadsheet ID</div>
+      <input class="settings-input" id="sheet-id" placeholder="1OCyYf0SYbTRYbi0v7KFbDNbSe737MYbRC81-2AIfeV4">
+      <div class="settings-note">Found in your Google Sheet URL: docs.google.com/spreadsheets/d/<strong>THIS_PART</strong>/edit</div>
+    </div>
+    <div class="settings-group">
+      <div class="settings-label">Google API Key</div>
+      <input class="settings-input" id="api-key" type="password" placeholder="AIza...">
+      <div class="settings-note">Get this from console.cloud.google.com → Create project → Enable Google Sheets API → Credentials → Create API key. Make the sheet publicly viewable (Share → Anyone with link → Viewer) so the API key can read it without OAuth.</div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="sync-btn" style="flex:1;padding:10px;" onclick="syncFromSheets()">Sync from Google Sheets now</button>
+    </div>
+    <div id="sync-result" class="sync-result"></div>
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+      <div class="settings-label" style="margin-bottom:8px;">Column order in your sheet (Row 1 headers)</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);line-height:2;">First Name · Last Name · Phone · SMS Phone · All Phones · Email · All Emails · Property Address · City · State · Zip · County · Property Type · Bedrooms · Bathrooms · Sq Ft Range · Year Built · Garage · Condition · Occupancy · Timeline · Seller Goal · Situation · Years Owned · Listed? · Owner Confirmed · Best Call Time · AI Summary · Call Strategy · Lead Status · Lead Cost · Ad Source · Platform · Date Purchased · Stage · Motivation Score</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-settings')">Close</button>
+      <button class="btn-save" onclick="saveSettings()">Save settings</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STAGES = ['New Lead','Contacted','Offer Sent','Under Contract','Closed','Dead'];
+const STAGE_COLORS = { 'New Lead':'var(--accent)','Contacted':'var(--purple)','Offer Sent':'var(--warn)','Under Contract':'var(--green)','Closed':'var(--green2)','Dead':'var(--muted2)' };
+
+let leads = [], currentLead = null;
+
+function loadLeads() {
+  try { leads = JSON.parse(localStorage.getItem('wos_leads') || '[]'); } catch(e) { leads = []; }
+  if (leads.length === 0) loadSampleLeads();
+  renderBoard();
+}
+
+function saveLeads() { localStorage.setItem('wos_leads', JSON.stringify(leads)); }
+
+function loadSampleLeads() {
+  leads = [
+    { id:'L001', first_name:'Maria', last_name:'Gonzalez', phone:'702-555-0142', email:'m.gonzalez@gmail.com', address:'4821 Nellis Blvd', city:'Las Vegas', state:'NV', zip:'89115', multifamily:'Single family', bedrooms:'3', bathrooms:'2', square:'1000-2000', year:'1987', condition:'Full rehab', occupied:'Owner Occupied', sell_fast:'ASAP', goal:'Financial distress', call_time:'Anytime', owned_years:'6-9', listed:'No', source:'LeadZolo', date:'2026-03-08', stage:'Offer Sent', score:8.4, asking_price:148000, summary:'Highly motivated seller facing financial distress. Open to immediate close. Has equity.', call_strategy:'Lead with empathy, walk through ARV math, emphasize speed and certainty.', timeline_events:[{type:'flag',text:'9 days no contact on hot lead',time:'Today'},{type:'offer',text:'Offer sent — $118,000',time:'Mar 8'},{type:'call',text:'Call — 18 min. Price gap discussed.',time:'Mar 8'},{type:'import',text:'Lead imported from LeadZolo',time:'Mar 5'}] },
+    { id:'L002', first_name:'James', last_name:'Porter', phone:'702-555-0199', email:'jporter@email.com', address:'1140 Desert Rose Ct', city:'Henderson', state:'NV', zip:'89002', multifamily:'Single family', bedrooms:'4', bathrooms:'2', square:'1800-2200', year:'2001', condition:'Minor repairs needed', occupied:'Vacant', sell_fast:'1-3 months', goal:'Relocating', call_time:'9am-12pm', owned_years:'10+', listed:'No', source:'iSpeedToLead', date:'2026-03-14', stage:'Contacted', score:7.1, asking_price:285000, summary:'Owner relocated out of state. Property sitting vacant. Motivated to avoid carrying costs.', call_strategy:'Focus on carrying cost burden and convenience of fast close.', timeline_events:[{type:'call',text:'Call — 12 min. Confirmed motivated.',time:'Mar 15'},{type:'import',text:'Lead imported from iSpeedToLead',time:'Mar 14'}] },
+    { id:'L003', first_name:'Sandra', last_name:'Kim', phone:'702-555-0234', email:'', address:'3390 Flamingo Rd', city:'Las Vegas', state:'NV', zip:'89121', multifamily:'Single family', bedrooms:'3', bathrooms:'1', square:'1000-1500', year:'1975', condition:'Major repairs needed', occupied:'Owner Occupied', sell_fast:'ASAP', goal:'Financial distress', call_time:'Evenings', owned_years:'3-5', listed:'No', source:'iSpeedToLead', date:'2026-03-17', stage:'New Lead', score:9.1, asking_price:0, summary:'Facing foreclosure. Needs to sell immediately. Significant deferred maintenance.', call_strategy:'Be direct about timeline. Lead with solution. Verify foreclosure date.', timeline_events:[{type:'import',text:'Lead imported from iSpeedToLead',time:'Mar 17'}] },
+    { id:'L004', first_name:'Tony', last_name:'Stark', phone:'(555) 123-4567', email:'ironman@example.com', address:'10880 Malibu Point', city:'Los Angeles', state:'CA', zip:'111222', multifamily:'Single family', bedrooms:'More than 5', bathrooms:'More than 3', square:'1000-2000', year:'1990-2000', condition:'Fully renovated', occupied:'Owner Occupied', sell_fast:'ASAP', goal:'Relocating', call_time:'5 PM - 8 PM, PDT', owned_years:'6-9', listed:'No', source:'iSpeedToLead', date:'2026-03-18', stage:'New Lead', score:8.0, asking_price:0, summary:'The homeowner is highly motivated to sell property quickly to access cash and is open to immediate closing.', call_strategy:'Confirm Seller Interest — Hi [Seller], this is [Your Name]. I\'m calling about your property...', timeline_events:[{type:'import',text:'Lead imported from iSpeedToLead via Make',time:'Mar 18'}] },
+    { id:'L005', first_name:'Robert', last_name:'Alvarado', phone:'702-555-0311', email:'ralvarado@gmail.com', address:'7720 Durango Dr', city:'Las Vegas', state:'NV', zip:'89113', multifamily:'Single family', bedrooms:'4', bathrooms:'3', square:'2200-2800', year:'2005', condition:'Minor repairs needed', occupied:'Tenant Occupied', sell_fast:'3-6 months', goal:'Tired landlord', call_time:'Anytime', owned_years:'10+', listed:'No', source:'Direct mail', date:'2026-02-28', stage:'Under Contract', score:6.5, asking_price:320000, summary:'Long-term landlord tired of management. Tenant lease expires in 2 months.', call_strategy:'Empathize with management burden. Discuss timing around tenant exit.', timeline_events:[{type:'offer',text:'Contract signed — $248,000',time:'Mar 10'},{type:'call',text:'Call — 24 min. Negotiated to $248k.',time:'Mar 5'},{type:'import',text:'Lead from direct mail campaign',time:'Feb 28'}] }
+  ];
+  saveLeads();
+}
+
+function scoreColor(s) { return s >= 8 ? 'hot' : s >= 6 ? 'warm' : s >= 4 ? 'cool' : 'cold'; }
+function scoreLabel(s) { return s >= 8 ? 'Hot' : s >= 6 ? 'Warm' : s >= 4 ? 'Cool' : 'Cold'; }
+function scoreHeatColor(s) { return s >= 8 ? 'var(--red)' : s >= 6 ? 'var(--warn)' : s >= 4 ? 'var(--accent)' : 'var(--muted)'; }
+function daysSince(d) { if (!d) return 0; const diff = Date.now() - new Date(d).getTime(); return Math.floor(diff / 86400000); }
+function fmt(n) { return '$' + Math.round(n).toLocaleString(); }
+function fmtP(n) { return (Math.round(n * 10) / 10) + '%'; }
+function initials(f, l) { return ((f||'?')[0] + (l||'?')[0]).toUpperCase(); }
+
+function renderBoard() {
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  let total = 0, active = 0, hot = 0, closed = 0;
+  STAGES.forEach(stage => {
+    const col = document.createElement('div');
+    col.className = 'stage-col';
+    const stageLeads = leads.filter(l => l.stage === stage);
+    total += stageLeads.length;
+    if (stage !== 'Dead') active += stageLeads.length;
+    hot += stageLeads.filter(l => (l.score||0) >= 8).length;
+    if (stage === 'Closed') closed += stageLeads.length;
+    const sc = scoreColor;
+    col.innerHTML = `<div class="stage-header"><div class="stage-name" style="color:${STAGE_COLORS[stage]||'var(--muted)'};">${stage}</div><div class="stage-count">${stageLeads.length}</div></div><div class="stage-cards" id="col-${stage.replace(/\s/g,'-')}">`;
+    board.appendChild(col);
+    const cardsDiv = col.querySelector('.stage-cards');
+    if (stageLeads.length === 0) {
+      cardsDiv.innerHTML = '<div class="empty-col">No leads</div>';
+    } else {
+      stageLeads.forEach(lead => {
+        const days = daysSince(lead.date);
+        const sc2 = scoreColor(lead.score || 0);
+        const card = document.createElement('div');
+        card.className = `lead-card ${sc2}`;
+        card.onclick = () => openLead(lead.id);
+        card.innerHTML = `
+          <div class="card-name">${lead.first_name} ${lead.last_name}</div>
+          <div class="card-address">${lead.address}${lead.city ? ', ' + lead.city : ''}</div>
+          <div class="card-meta">
+            <span class="card-score ${sc2}">${lead.score || '—'} ${scoreLabel(lead.score||0)}</span>
+            <span class="card-days ${days > 7 ? 'urgent' : ''}">${days}d ago</span>
+          </div>
+          ${lead.sell_fast ? `<div class="card-timeline">${lead.sell_fast} · ${lead.goal || ''}</div>` : ''}
+        `;
+        cardsDiv.appendChild(card);
+      });
+    }
+  });
+  document.getElementById('stat-total').textContent = leads.length;
+  document.getElementById('stat-active').textContent = leads.filter(l => l.stage !== 'Dead' && l.stage !== 'Closed').length;
+  document.getElementById('stat-hot').textContent = leads.filter(l => (l.score||0) >= 8).length;
+  document.getElementById('stat-closed').textContent = leads.filter(l => l.stage === 'Closed').length;
+}
+
+function openLead(id) {
+  currentLead = leads.find(l => l.id === id);
+  if (!currentLead) return;
+  const l = currentLead;
+  document.getElementById('view-pipeline').classList.remove('active');
+  document.getElementById('view-detail').classList.add('active');
+  document.getElementById('nav-detail').style.display = '';
+  document.getElementById('detail-lead-id').textContent = 'LEAD #' + l.id;
+  document.getElementById('d-avatar').textContent = initials(l.first_name, l.last_name);
+  document.getElementById('d-name').textContent = (l.first_name || '') + ' ' + (l.last_name || '');
+  document.getElementById('d-phone').textContent = l.phone || '—';
+  const scoreEl = document.getElementById('d-score');
+  scoreEl.textContent = l.score || '—';
+  scoreEl.style.color = scoreHeatColor(l.score || 0);
+  const badge = document.getElementById('d-heat-badge');
+  const sc = scoreColor(l.score || 0);
+  badge.textContent = scoreLabel(l.score || 0);
+  const badgeColors = { hot: 'rgba(255,68,85,.15);color:var(--red);border:1px solid rgba(255,68,85,.35)', warm: 'rgba(255,140,0,.15);color:var(--warn);border:1px solid rgba(255,140,0,.35)', cool: 'rgba(0,212,255,.1);color:var(--accent);border:1px solid rgba(0,212,255,.25)', cold: 'rgba(122,122,138,.1);color:var(--muted);border:1px solid rgba(122,122,138,.25)' };
+  badge.style.cssText = 'font-family:var(--mono);font-size:10px;padding:3px 9px;border-radius:99px;background:' + badgeColors[sc];
+
+  const contactRows = [
+    ['Email', l.email || '—', l.email ? 'accent' : ''],
+    ['Source', l.source || '—', ''],
+    ['Last contact', daysSince(l.date) + ' days ago', daysSince(l.date) > 7 ? 'warn' : ''],
+    ['Asking price', l.asking_price ? fmt(l.asking_price) : 'Unknown', ''],
+    ['Call time', l.call_time || '—', ''],
+    ['Lead status', l.lead_status || 'Standard', ''],
+  ];
+  document.getElementById('d-contact-rows').innerHTML = contactRows.map(r => `<div class="info-row"><span class="info-key">${r[0]}</span><span class="info-val ${r[2]}">${r[1]}</span></div>`).join('');
+
+  document.getElementById('d-address').textContent = l.address || '—';
+  document.getElementById('d-city-state').textContent = [l.city, l.state, l.zip].filter(Boolean).join(', ') || '—';
+  const chips = [l.bedrooms ? l.bedrooms + ' bed' : '', l.bathrooms ? l.bathrooms + ' bath' : '', l.square ? l.square + ' sf' : '', l.year || '', l.occupied || ''].filter(Boolean);
+  document.getElementById('d-prop-chips').innerHTML = chips.map(c => `<span class="prop-chip">${c}</span>`).join('');
+  const propRows = [
+    ['Condition', l.condition || l.repairs || '—', (l.condition||'').includes('Major') || (l.condition||'').includes('Full') ? 'warn' : ''],
+    ['Yr built', l.year || '—', ''],
+    ['County', l.county_name || '—', ''],
+    ['Owned', l.owned_years ? l.owned_years + ' yrs' : '—', ''],
+  ];
+  document.getElementById('d-prop-rows').innerHTML = propRows.map(r => `<div class="info-row"><span class="info-key">${r[0]}</span><span class="info-val ${r[2]}">${r[1]}</span></div>`).join('');
+
+  const days = daysSince(l.date);
+  let aiMsg = l.summary || 'No AI summary available.';
+  if (days > 7 && l.stage === 'Offer Sent') aiMsg = days + ' days silent on a hot lead — deal at risk. ' + aiMsg;
+  document.getElementById('d-ai-msg').textContent = aiMsg;
+
+  renderStageTrack(l.stage);
+  renderTimeline(l);
+  renderNextSteps(l);
+
+  document.getElementById('btn-followup').onclick = () => alert('In the full build this fires a Claude prompt. For now: call ' + l.first_name + ' at ' + l.phone);
+  document.getElementById('btn-objections').onclick = () => alert('Open Titanium Toolkit → Objections tab for ' + (l.goal || 'this seller type'));
+  document.getElementById('btn-dealsheet').onclick = () => alert('In the full build this generates a dispo deal sheet for ' + l.address);
+
+  document.getElementById('c-arv').value = 0;
+  document.getElementById('c-repairs').value = 0;
+  document.getElementById('c-fee').value = 8000;
+  calc();
+  selectBucket('hh');
+  selectType(document.querySelector('.type-chip.active'), 'financial');
+}
+
+function renderStageTrack(currentStage) {
+  const activeStages = STAGES.filter(s => s !== 'Dead');
+  document.getElementById('stage-track').innerHTML = activeStages.map((s, i) => {
+    const idx = activeStages.indexOf(currentStage);
+    const cls = s === currentStage ? 'active' : activeStages.indexOf(s) < idx ? 'done' : '';
+    const sep = i < activeStages.length - 1 ? '<span class="stage-sep">›</span>' : '';
+    return `<span class="stage-step ${cls}" onclick="changeStage('${s}')">${s}</span>${sep}`;
+  }).join('');
+}
+
+function renderTimeline(l) {
+  const events = l.timeline_events || [];
+  document.getElementById('timeline-list').innerHTML = events.map(e => `
+    <div class="tl-item">
+      <div class="tl-dot ${e.type}"></div>
+      <div><div class="tl-text">${e.text}</div><div class="tl-time">${e.time}</div></div>
+    </div>`).join('') || '<div style="font-size:12px;color:var(--muted);">No activity yet</div>';
+}
+
+function renderNextSteps(l) {
+  const days = daysSince(l.date);
+  const steps = [];
+  if (days > 7) steps.push({ urgent: true, text: 'Call today — ' + days + ' days since last contact' });
+  if (l.stage === 'Offer Sent') steps.push({ urgent: false, text: 'Follow up on sent offer' });
+  if (!l.score) steps.push({ urgent: false, text: 'Score motivation after first call' });
+  steps.push({ urgent: false, text: 'Update stage after contact' });
+  steps.push({ urgent: false, text: 'Log call notes below' });
+  document.getElementById('next-steps-list').innerHTML = steps.map(s => `
+    <div class="next-item ${s.urgent ? 'urgent' : 'normal'}">
+      <div class="next-dot" style="background:${s.urgent ? 'var(--red)' : 'var(--muted2)'}"></div>
+      ${s.text}
+    </div>`).join('');
+}
+
+function changeStage(stage) {
+  if (!currentLead) return;
+  const old = currentLead.stage;
+  currentLead.stage = stage;
+  if (!currentLead.timeline_events) currentLead.timeline_events = [];
+  currentLead.timeline_events.unshift({ type: 'stage', text: 'Stage: ' + old + ' → ' + stage, time: 'Now' });
+  saveLeads();
+  renderStageTrack(stage);
+  renderTimeline(currentLead);
+}
+
+function markDead() {
+  if (!currentLead) return;
+  changeStage('Dead');
+  backToPipeline();
+}
+
+function addNote() {
+  const val = document.getElementById('note-input').value.trim();
+  if (!val || !currentLead) return;
+  if (!currentLead.timeline_events) currentLead.timeline_events = [];
+  const now = new Date();
+  currentLead.timeline_events.unshift({ type: 'note', text: val, time: now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) });
+  saveLeads();
+  renderTimeline(currentLead);
+  document.getElementById('note-input').value = '';
+}
+
+function logCall() {
+  const val = document.getElementById('note-input').value.trim() || 'Call logged';
+  if (!currentLead) return;
+  if (!currentLead.timeline_events) currentLead.timeline_events = [];
+  const now = new Date();
+  currentLead.timeline_events.unshift({ type: 'call', text: 'Call — ' + val, time: now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) });
+  saveLeads();
+  renderTimeline(currentLead);
+  document.getElementById('note-input').value = '';
+}
+
+function backToPipeline() {
+  document.getElementById('view-detail').classList.remove('active');
+  document.getElementById('view-pipeline').classList.add('active');
+  document.getElementById('nav-detail').style.display = 'none';
+  renderBoard();
+}
+
+function showView(name, btn) {
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (name === 'pipeline') backToPipeline();
+}
+
+// CALCULATOR
+function switchCalc(name, el) {
+  document.querySelectorAll('.ctab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.cpanel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('cpanel-' + name).classList.add('active');
+}
+
+function calc() {
+  const arv = parseFloat(document.getElementById('c-arv').value) || 0;
+  const rep = parseFloat(document.getElementById('c-repairs').value) || 0;
+  const fee = parseFloat(document.getElementById('c-fee').value) || 0;
+  const rent = parseFloat(document.getElementById('c-rent').value) || 0;
+  const taxes = parseFloat(document.getElementById('c-taxes').value) || 0;
+  const market = document.getElementById('c-market').value;
+  if (!arv) return;
+  const cc = arv * .07, hc = arv * .05;
+  const rem = arv - cc - hc - rep;
+  const maxB = rem;
+  const buyerP = rem - arv * .15;
+  const sellerP = buyerP + fee;
+  const profit = rem - buyerP;
+  const pct = (profit / arv) * 100;
+  const ptr = rep > 0 ? profit / rep : 0;
+  const set = (id, val, cls) => { const el = document.getElementById(id); el.textContent = val; el.className = 'rbox-val ' + (cls || ''); };
+  set('r-seller', fmt(sellerP), 'accent');
+  set('r-buyer', fmt(buyerP), '');
+  set('r-max', fmt(maxB), '');
+  set('r-profit', fmt(profit), profit > 0 && pct >= 15 ? 'green' : profit > 0 ? 'warn' : 'red');
+  set('r-pct', fmtP(pct), pct >= 15 ? 'green' : pct >= 10 ? 'warn' : 'red');
+  set('r-ptr', (Math.round(ptr * 10) / 10) + 'x', ptr >= 1 ? 'green' : ptr >= .7 ? 'warn' : 'red');
+  const v = document.getElementById('r-verdict');
+  if (pct >= 15 && ptr >= 1) { v.className = 'verdict pass'; v.textContent = '✓ Strong deal'; }
+  else if (pct >= 10) { v.className = 'verdict marginal'; v.textContent = '△ Marginal — may work for right buyer'; }
+  else { v.className = 'verdict fail'; v.textContent = '✗ Too thin'; }
+  const allIn = sellerP + sellerP * .07 + rep;
+  const monthExp = (taxes / 12) + (rent * .05) + (rent * .08);
+  const netM = rent - monthExp;
+  const rr = allIn > 0 ? rent / allIn : 0;
+  const eqPct = arv > 0 ? ((arv - allIn) / arv) * 100 : 0;
+  const mMin = { A: .01, B: .015, C: .025 }[market];
+  set('r-net', fmt(netM), netM > 0 ? 'green' : 'red');
+  set('r-rratio', fmtP(rr * 100), rr >= mMin ? 'green' : 'warn');
+  set('r-equity', fmtP(eqPct), '');
+  const rv = document.getElementById('r-rental-verdict');
+  if (rr >= mMin) { rv.className = 'verdict pass'; rv.textContent = '✓ Meets ' + market + ' market target'; }
+  else { rv.className = 'verdict marginal'; rv.textContent = '△ Below ' + market + ' target of ' + fmtP(mMin * 100); }
+  const wtCosts = sellerP + sellerP * .07 + rep * .2 + hc + arv * .08;
+  const wtProfit = arv - wtCosts;
+  const wtPct = (wtProfit / arv) * 100;
+  set('r-wt-profit', fmt(wtProfit), wtPct >= 15 ? 'green' : wtPct >= 10 ? 'warn' : 'red');
+  set('r-wt-pct', fmtP(wtPct), '');
+  set('r-wt-costs', fmt(wtCosts), '');
+  const wv = document.getElementById('r-wt-verdict');
+  wv.className = 'verdict ' + (wtPct >= 15 ? 'pass' : wtPct >= 10 ? 'marginal' : 'fail');
+  wv.textContent = wtPct >= 15 ? '✓ Wholetail looks solid' : wtPct >= 10 ? '△ Light margin for wholetail' : '✗ Not viable as wholetail';
+  const scens = [
+    { l: 'Base case', af: 1, rf: 1 }, { l: 'ARV -5%', af: .95, rf: 1 }, { l: 'ARV -10%', af: .9, rf: 1 },
+    { l: 'Repairs +10%', af: 1, rf: 1.1 }, { l: 'Repairs +20%', af: 1, rf: 1.2 },
+    { l: 'ARV -5% + Repairs +10%', af: .95, rf: 1.1 }, { l: 'ARV -10% + Repairs +20%', af: .9, rf: 1.2 }
+  ];
+  document.getElementById('stress-rows').innerHTML = scens.map(s => {
+    const sa = arv * s.af, sr = rep * s.rf;
+    const srem = sa - sa * .07 - sa * .05 - sr;
+    const sbp = srem - sa * .15;
+    const sp = srem - sbp;
+    const spct = (sp / sa) * 100;
+    const cls = spct >= 15 ? 'pass' : spct >= 0 ? 'warn' : 'fail';
+    return `<div class="stress-row ${cls}"><span class="stress-lbl">${s.l}</span><span>${fmt(sp)} (${fmtP(spct)})</span></div>`;
+  }).join('');
+}
+
+// BUCKETS
+const bucketCfg = {
+  ll: { cls: 'sel-ll', msg: "Dig deeper — less than 1% of sellers. Almost always a hidden motivation. Verify ownership before proceeding.", style: 'background:rgba(122,122,138,.07);border:1px solid rgba(122,122,138,.25);color:var(--muted);' },
+  hl: { cls: 'sel-hl', msg: "Lock it up immediately. Have the contract ready before you hang up. Don't talk yourself out of it.", style: 'background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.25);color:var(--green);' },
+  hh: { cls: 'sel-hh', msg: "Most common seller. Educate with math — walk through the numbers live on this call. Price drops happen throughout the conversation.", style: 'background:rgba(255,140,0,.07);border:1px solid rgba(255,140,0,.25);color:var(--warn);' },
+  lh: { cls: 'sel-lh', msg: "Pull away professionally. If they pull back after you disengage, dig deeper. Otherwise embrace no and move on.", style: 'background:rgba(255,68,85,.07);border:1px solid rgba(255,68,85,.25);color:var(--red);' }
+};
+function selectBucket(key) {
+  ['ll','hl','hh','lh'].forEach(k => { document.getElementById('bkt-' + k).className = 'bucket-card' + (k === key ? ' ' + bucketCfg[k].cls : ''); });
+  const bs = document.getElementById('bucket-strategy');
+  bs.textContent = bucketCfg[key].msg;
+  bs.style.cssText = 'padding:9px 11px;border-radius:4px;font-size:12px;line-height:1.6;margin-bottom:10px;' + bucketCfg[key].style;
+}
+
+const typeData = {
+  financial: { q: '→ Type of financial distress?\n→ Timeline pressure?\n→ Amount needed to solve?\n→ Equity position?\n→ Foreclosure status?', s: '→ Quick situation analysis\n→ Set clear timeline\n→ Focus on solution\n→ Verify actual motivation\n→ Check equity position' },
+  occupant: { q: '→ Why sell at a discount?\n→ Where are they moving?\n→ What is their timeline?\n→ Do they have a place to go?', s: '→ Focus on their next steps\n→ Be patient with access\n→ Help with transition\n→ Address emotional attachment' },
+  tired: { q: '→ Current challenges?\n→ How is property performing?\n→ Management issues?\n→ How long have they owned?', s: '→ Speak their language\n→ Focus on numbers\n→ Address management burden\n→ Build credibility early' },
+  inherited: { q: '→ Current condition?\n→ Carrying costs?\n→ Other heirs involved?\n→ Out of state?', s: '→ Be aggressive in closing\n→ Address all decision-makers\n→ Focus on burden aspects\n→ Prepare for attorney review' }
+};
+function selectType(el, type) {
+  document.querySelectorAll('.type-chip').forEach(c => c.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const d = typeData[type] || typeData.financial;
+  document.getElementById('type-q').innerHTML = d.q.split('\n').join('<br>');
+  document.getElementById('type-s').innerHTML = d.s.split('\n').join('<br>');
+  document.getElementById('type-detail').style.display = 'grid';
+}
+
+// ADD LEAD
+function openAddLead() { document.getElementById('modal-add').classList.add('open'); }
+function saveLead() {
+  const id = 'L' + String(leads.length + 1).padStart(3, '0');
+  const score = calcScore({ sell_fast: document.getElementById('f-sellfast').value, goal: document.getElementById('f-goal').value, occupied: document.getElementById('f-occupied').value });
+  leads.push({
+    id, first_name: document.getElementById('f-first').value, last_name: document.getElementById('f-last').value,
+    phone: document.getElementById('f-phone').value, email: document.getElementById('f-email').value,
+    address: document.getElementById('f-address').value, city: document.getElementById('f-city').value,
+    state: document.getElementById('f-state').value, zip: document.getElementById('f-zip').value,
+    multifamily: document.getElementById('f-type').value, bedrooms: document.getElementById('f-beds').value,
+    bathrooms: document.getElementById('f-baths').value, square: document.getElementById('f-sqft').value,
+    sell_fast: document.getElementById('f-sellfast').value, goal: document.getElementById('f-goal').value,
+    occupied: document.getElementById('f-occupied').value, asking_price: parseFloat(document.getElementById('f-asking').value) || 0,
+    source: document.getElementById('f-source').value, call_time: document.getElementById('f-calltime').value,
+    summary: document.getElementById('f-summary').value, stage: 'New Lead', score, date: new Date().toISOString(),
+    timeline_events: [{ type: 'import', text: 'Lead added manually', time: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) }]
+  });
+  saveLeads(); closeModal('modal-add'); renderBoard();
+}
+
+function calcScore(l) {
+  let s = 0;
+  if (l.sell_fast === 'ASAP') s += 3; else if (l.sell_fast === '1-3 months') s += 2; else if (l.sell_fast === '3-6 months') s += 1;
+  if ((l.goal || '').toLowerCase().includes('financial') || (l.goal || '').toLowerCase().includes('reloc')) s += 2;
+  if ((l.goal || '').toLowerCase().includes('inherited') || (l.goal || '').toLowerCase().includes('tired')) s += 2;
+  if (l.occupied === 'Vacant') s += 2;
+  return Math.min(10, Math.round(s * 10) / 10);
+}
+
+// SETTINGS & SYNC
+function openSettings() {
+  document.getElementById('sheet-id').value = localStorage.getItem('wos_sheet_id') || '';
+  document.getElementById('api-key').value = localStorage.getItem('wos_api_key') || '';
+  document.getElementById('modal-settings').classList.add('open');
+}
+function saveSettings() {
+  localStorage.setItem('wos_sheet_id', document.getElementById('sheet-id').value);
+  localStorage.setItem('wos_api_key', document.getElementById('api-key').value);
+  closeModal('modal-settings');
+}
+
+async function syncFromSheets() {
+  const sheetId = document.getElementById('sheet-id').value.trim();
+  const apiKey = document.getElementById('api-key').value.trim();
+  const resultEl = document.getElementById('sync-result');
+  if (!sheetId || !apiKey) { resultEl.className = 'sync-result err'; resultEl.textContent = 'Enter both Spreadsheet ID and API Key first.'; return; }
+  resultEl.className = 'sync-result'; resultEl.textContent = 'Syncing...'; resultEl.style.display = 'block';
+  try {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Sheet1?key=${apiKey}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status + ' — check your Sheet ID and API key, and make sure the sheet is set to "Anyone with link can view"');
+    const data = await res.json();
+    const rows = data.values || [];
+    if (rows.length < 2) { resultEl.className = 'sync-result err'; resultEl.textContent = 'Sheet appears empty or has only headers.'; return; }
+    const headers = rows[0].map(h => h.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, ''));
+    const fieldMap = {
+      first_name: 'first_name', last_name: 'last_name', phone: 'phone', sms_phone: 'sms_phone',
+      all_phones: 'phones', email: 'email', all_emails: 'emails', property_address: 'address',
+      city: 'city', state: 'state', zip_code: 'zip', zip: 'zip', county: 'county_name',
+      property_type: 'multifamily', bedrooms: 'bedrooms', bathrooms: 'bathrooms',
+      sq_ft_range: 'square', year_built: 'year', garage: 'garage', condition: 'condition',
+      occupancy: 'occupied', timeline: 'sell_fast', seller_goal: 'goal', situation: 'scenario',
+      years_owned: 'owned_years', listed: 'listed', owner_confirmed: 'owner',
+      best_call_time: 'call_time', ai_summary: 'summary', call_strategy: 'call_strategy',
+      lead_status: 'lead_status', lead_cost: 'price', ad_source: 'source',
+      platform: 'source_channel', date_purchased: 'date', stage: 'stage', motivation_score: 'score'
+    };
+    let imported = 0, updated = 0;
+    rows.slice(1).forEach((row, i) => {
+      if (!row.length) return;
+      const obj = {};
+      headers.forEach((h, idx) => { const key = fieldMap[h] || h; obj[key] = row[idx] || ''; });
+      if (!obj.first_name && !obj.phone && !obj.address) return;
+      const existingIdx = leads.findIndex(l => l.phone && l.phone === obj.phone && l.address === obj.address);
+      const score = obj.score ? parseFloat(obj.score) : calcScore(obj);
+      const lead = { ...obj, id: existingIdx >= 0 ? leads[existingIdx].id : 'S' + String(leads.length + i + 1).padStart(3, '0'), score, stage: obj.stage || 'New Lead', date: obj.date || new Date().toISOString(), timeline_events: existingIdx >= 0 ? leads[existingIdx].timeline_events : [{ type: 'import', text: 'Imported from Google Sheets', time: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) }] };
+      if (existingIdx >= 0) { leads[existingIdx] = { ...leads[existingIdx], ...lead }; updated++; }
+      else { leads.push(lead); imported++; }
+    });
+    saveLeads(); renderBoard();
+    resultEl.className = 'sync-result ok';
+    resultEl.textContent = `✓ Sync complete — ${imported} new leads imported, ${updated} updated.`;
+  } catch (e) {
+    resultEl.className = 'sync-result err';
+    resultEl.textContent = 'Error: ' + e.message;
+  }
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }));
+
+loadLeads();
+selectType(document.querySelector('.type-chip'), 'financial');
+</script>
+</body>
+</html>
